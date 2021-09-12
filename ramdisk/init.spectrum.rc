@@ -1,0 +1,314 @@
+# Initialization
+	on property:sys.boot_completed=1
+	exec u:r:init:s0 root root -- /init.spectrum.sh
+	exec u:r:su:s0 root root -- /init.spectrum.sh
+	setprop spectrum.support 1
+
+# Ultra Battery（超级省电）
+	on property:persist.morpho.profile=1
+		write /sdcard/Android/data/selected-profile 1
+		write /sys/devices/system/cpu/cpu4/online 0
+		write /sys/devices/system/cpu/cpu5/online 0
+		write /sys/devices/system/cpu/cpu6/online 0
+		write /sys/devices/system/cpu/cpu7/online 0
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor powersave
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor powersave
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 652800
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq 652800
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 625800
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq 652800
+		write /sys/module/workqueue/parameters/power_efficient Y
+		write /sys/class/kgsl/kgsl-3d0/max_gpuclk 216000000
+		write /sys/class/kgsl/kgsl-3d0/devfreq/governor powersave
+		write /sys/module/adreno_idler/parameters/adreno_idler_active Y
+		write /sys/module/adreno_idler/parameters/adreno_idler_idleworkload 10000
+
+# Battery（省电）
+	on property:persist.morpho.profile=2
+	##控制 4 5 6 7 号核心的开关
+		write /sdcard/Android/data/selected-profile 2
+		write /sys/devices/system/cpu/cpu4/online 1
+		write /sys/devices/system/cpu/cpu5/online 0
+		write /sys/devices/system/cpu/cpu6/online 0
+		write /sys/devices/system/cpu/cpu7/online 0
+		##CPU调速器模式
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor interactive
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor interactive
+		##当CPU被go_hispeed_load激活时，这个时间内如果没有明显大量任务则下降频率，反之增加频率
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/above_hispeed_delay  "5000000"
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/boost 0
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/boostpulse_duration 30000
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/go_hispeed_load 95
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/hispeed_freq 1401600
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/min_sample_time 13000
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/target_loads "75 1036800:90 1401600"
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate 80000
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_slack 1000
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/above_hispeed_delay  "5000000"
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/boost 0
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/boostpulse_duration 30000
+		##应急机动，当CPU忽然处于某个负载时立即达到该频率
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/go_hispeed_load 95
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/hispeed_freq 1401600
+		##CPU开始降频之前的最低时间
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/min_sample_time 13000
+		##CPU对应负荷而进行频率调整  格式为 :<load> <ferq>以冒号为间隔。
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/target_loads "75 1036800:90 1401600"
+		##计算 工作负载的间隔时间，可以理解为 target_loads 的采样间隔
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/timer_rate 80000
+		##当进入空闲状态之后，需要一个延时计时器，当CPU不能从空闲状态苏醒来响应定时器. 
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/timer_slack 1000
+		##控制CPU的最高和最低频率
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 652800
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq 652800
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 1401600
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq 1401600
+		##控制GPU自动调节器是否启用
+		write /sys/module/workqueue/parameters/power_efficient Y
+		##GPU最大频率
+		write /sys/class/kgsl/kgsl-3d0/max_gpuclk 400000000
+		##GPU的工作调频模式
+		write /sys/class/kgsl/kgsl-3d0/devfreq/governor msm-adreno-tz
+		##GPU的Adreno_idler调度器是否启用
+		write /sys/module/adreno_idler/parameters/adreno_idler_active Y
+		##GPU加载的积极程度？
+		write /sys/module/adreno_idler/parameters/adreno_idler_idleworkload 10000
+		##GPU的发力激进程度，越小越积极 范围是100-1
+				write /sys/module/adreno_idler/parameters/adreno_idler_downifferential  50
+				## 对磁盘 I/O读写激进程度 只能从 1 或者 2 取其一。1一般，2激进
+		write /sys/block/mmcblk0/queue/rq_affinity "1"
+# Balanced（均衡）
+	on property:persist.morpho.profile=3
+		write /sdcard/Android/data/selected-profile 3
+		write /sys/devices/system/cpu/cpu4/online 1
+		write /sys/devices/system/cpu/cpu5/online 1
+		write /sys/devices/system/cpu/cpu6/online 1
+		write /sys/devices/system/cpu/cpu7/online 0
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor interactive
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor interactive
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/above_hispeed_delay  "2300000"
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/boost 0
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/boostpulse_duration 30000
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/go_hispeed_load 80
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/hispeed_freq 1689600
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/min_sample_time 33000
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/target_loads "60 1036800:75 1401600:85 1689600:90"
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate 20000
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_slack 1000
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/above_hispeed_delay  "2300000"
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/boost 0
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/boostpulse_duration 30000
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/go_hispeed_load 80
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/hispeed_freq 1689600
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/min_sample_time 33000
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/target_loads "60 1036800:75 1401600:90 1689600"
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/timer_rate 20000
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/timer_slack 1000
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 652800
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq 652800
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 1689600
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq 1689600
+		write /sys/module/workqueue/parameters/power_efficient Y 
+		write /sys/class/kgsl/kgsl-3d0/max_gpuclk 510000000
+		write /sys/class/kgsl/kgsl-3d0/devfreq/governor msm-adreno-tz
+		write /sys/module/adreno_idler/parameters/adreno_idler_active Y
+		write /sys/module/adreno_idler/parameters/adreno_idler_idleworkload 7000 
+		write /sys/module/adreno_idler/parameters/adreno_idler_downifferential  20
+		write /sys/block/mmcblk0/queue/rq_affinity "1"
+		
+# Performance（运算模式）
+	on property:persist.morpho.profile=4
+		write /sdcard/Android/data/selected-profile 4
+		write /sys/devices/system/cpu/cpu4/online 1
+		write /sys/devices/system/cpu/cpu5/online 1
+		write /sys/devices/system/cpu/cpu6/online 1
+		write /sys/devices/system/cpu/cpu7/online 1
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor performance
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor performance
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 2016000
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq 2016000
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 2016000
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq 2016000
+		write /sys/module/workqueue/parameters/power_efficient Y
+		write /sys/class/kgsl/kgsl-3d0/max_gpuclk 510000000
+		write /sys/class/kgsl/kgsl-3d0/devfreq/governor msm-adreno-tz
+		write /sys/module/adreno_idler/parameters/adreno_idler_active Y
+		write /sys/module/adreno_idler/parameters/adreno_idler_idleworkload 10000 
+		write /sys/module/adreno_idler/parameters/adreno_idler_downifferential  30
+		write /sys/block/mmcblk0/queue/rq_affinity "2"
+				
+# Gaming（游戏模式）
+	on property:persist.morpho.profile=5
+	    write /sdcard/Android/data/selected-profile 5
+		write /sys/devices/system/cpu/cpu4/online 1
+		write /sys/devices/system/cpu/cpu5/online 1
+		write /sys/devices/system/cpu/cpu6/online 1
+		write /sys/devices/system/cpu/cpu7/online 1
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor performance
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor performance
+		##频率必须采用升序数列，格式为 X1 Y1:X2 Y2 ....  CPU 频率在 Y GHz 以下时 CPU 要在 go_hispeed_load 甚至更高的负载下运行超过 X us 才会进一步升频
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/above_hispeed_delay  "120000 1804800:150000 2016000"
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/boost 0
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/boostpulse_duration 2000300
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/go_hispeed_load 48
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/hispeed_freq 1804800
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/min_sample_time 78000
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/target_loads "40 1576900:66 1766420:78 1874315:90 1958400"
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate 20000
+		write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_slack 180000
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/above_hispeed_delay  "120000 1804800:150000 2016"
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/boost 0
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/boostpulse_duration 2000300
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/go_hispeed_load 48
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/hispeed_freq 1804800
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/min_sample_time 78000
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/target_loads "40 1576900:66 1766420:78 1874315:90 1958400"
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/timer_rate 20000
+		write /sys/devices/system/cpu/cpu4/cpufreq/interactive/timer_slack 180000
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 1036800
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq 1036800
+		write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 2016000
+		write /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq 2016000
+		write /sys/module/workqueue/parameters/power_efficient N
+		write /sys/class/kgsl/kgsl-3d0/max_gpuclk 650000000
+		write /sys/class/kgsl/kgsl-3d0/devfreq/governor performance
+		write /sys/module/adreno_idler/parameters/adreno_idler_active N
+		write /sys/block/mmcblk0/queue/rq_affinity "2"
+# Common
+	on property:persist.spectrum.profile=0
+	# Online CPUs
+	write /sys/devices/system/cpu/cpu0/online 1
+		write /sys/devices/system/cpu/cpu1/online 1
+		write /sys/devices/system/cpu/cpu2/online 1
+		write /sys/devices/system/cpu/cpu3/online 1
+	# Boosts
+		write /sys/module/cpu_boost/parameters/input_boost_enabled 0
+		write /sys/module/cpu_boost/parameters/input_boost_freq "0:0 1:0 2:0 3:0 4:0 5:0 6:0 7:0"
+		write /sys/module/msm_performance/parameters/touchboost 0
+		write /sys/module/cpu_input_boost/parameters/input_boost_freq_hp 0
+		write /sys/module/cpu_input_boost/parameters/input_boost_freq_lp 0
+		write /sys/module/cpu_input_boost/parameters/dynamic_stune_boost 0
+		write /dev/stune/schedtune.sched_boost 0
+		write /dev/stune/top-app/schedtune.sched_boost 0
+		write /dev/stune/foreground/schedtune.sched_boost 0
+		write /dev/stune/background/schedtune.sched_boost 0
+		write /dev/stune/rt/schedtune.sched_boost 0
+		write /sys/module/cpu_boost/parameters/input_boost_ms 0
+		write /sys/module/cpu_input_boost/parameters/input_boost_duration 0
+	# Thermals
+		write /sys/kernel/msm_thermal/enabled 0
+		write /sys/module/msm_thermal/core_control/enabled 0
+		write /sys/module/msm_thermal/vdd_restriction/enabled 0
+		write /sys/module/msm_thermal/parameters/enabled N
+	# Kernel Samepage Merging
+		write /sys/kernel/mm/ksm/run 0
+		write /sys/kernel/mm/uksm/run 0
+	# I/O Scheduler
+		setprop sys.io.scheduler maple
+		write /sys/block/sda/queue/iostats 0
+		write /sys/block/sda/queue/read_ahead_kb 128
+		write /sys/block/sda/queue/scheduler maple
+		write /sys/block/sde/queue/iostats 0
+		write /sys/block/sde/queue/read_ahead_kb 128
+		write /sys/block/sde/queue/scheduler maple
+		write /sys/block/dm-0/queue/iostats 0
+		write /sys/block/dm-0/queue/read_ahead_kb 128
+		write /sys/block/dm-0/queue/scheduler maple
+	# Low Memory Killer
+#		write /sys/module/lowmemorykiller/parameters/enable_adaptive_lmk 0
+#		write /sys/module/lowmemorykiller/parameters/minfree 2560,3840,20688,25600,32000,38400
+	# Virtual Memory
+#		write /proc/sys/vm/swappiness 30
+	#	write /sys/block/zram0/disksize 1069547520
+	# Entropy
+		write /proc/sys/kernel/random/read_wakeup_threshold 1024
+		write /proc/sys/kernel/random/write_wakeup_threshold 2048
+	# Undebug
+		write /sys/module/earlysuspend/parameters/debug_mask 0
+		write /sys/module/alarm/parameters/debug_mask 0
+		write /sys/module/alarm_dev/parameters/debug_mask 0
+		write /sys/module/binder/parameters/debug_mask 0
+		write /sys/devices/system/edac/cpu/log_ce 0
+		write /sys/devices/system/edac/cpu/log_ue 0
+		write /sys/module/binder/parameters/debug_mask 0
+		write /sys/module/bluetooth/parameters/disable_ertm Y
+		write /sys/module/bluetooth/parameters/disable_esco Y
+		write /sys/module/debug/parameters/enable_event_log 0
+		write /sys/module/dwc3/parameters/ep_addr_rxdbg_mask 0 
+		write /sys/module/dwc3/parameters/ep_addr_txdbg_mask 0
+		write /sys/module/edac_core/parameters/edac_mc_log_ce 0
+		write /sys/module/edac_core/parameters/edac_mc_log_ue 0
+		write /sys/module/glink/parameters/debug_mask 0
+		write /sys/module/hid_apple/parameters/fnmode 0
+		write /sys/module/hid_magicmouse/parameters/emulate_3button N
+		write /sys/module/hid_magicmouse/parameters/emulate_scroll_wheel N
+		write /sys/module/ip6_tunnel/parameters/log_ecn_error N
+		write /sys/module/lowmemorykiller/parameters/debug_level 0
+		write /sys/module/msm_show_resume_irq/parameters/debug_mask 0
+		write /sys/module/msm_smd/parameters/debug_mask 0
+		write /sys/module/msm_smem/parameters/debug_mask 0 
+		write /sys/module/otg_wakelock/parameters/enabled N 
+		write /sys/module/service_locator/parameters/enable 0 
+		write /sys/module/sit/parameters/log_ecn_error N
+		write /sys/module/smem_log/parameters/log_enable 0
+		write /sys/module/smp2p/parameters/debug_mask 0
+		write /sys/module/sync/parameters/fsync_enabled N
+		write /sys/module/touch_core_base/parameters/debug_mask 0
+		write /sys/module/usb_bam/parameters/enable_event_log 0
+		write /sys/module/printk/parameters/console_suspend Y
+		write /proc/sys/debug/exception-trace 0
+		write /sys/kernel/printk_mode/printk_mode 0
+	# Wakelocks
+		write /sys/class/misc/boeffla_wakelock_blocker/wakelock_blocker "wlan_pno_wl;wlan_ipa;wcnss_filter_lock;[timerfd];hal_bluetooth_lock;IPA_WS;sensor_ind;wlan;netmgr_wl;qcom_rx_wakelock;wlan_wow_wl;wlan_extscan_wl;NETLINK"
+		write /sys/module/smb135x_charger/parameters/use_wlock N
+		write /sys/module/xhci_hcd/parameters/wl_divide N
+		write /sys/module/bcmdhd/parameters/wlctrl_divide N
+		write /sys/module/bcmdhd/parameters/wlrx_divide N
+		write /sys/module/wakeup/parameters/enable_bluesleep_ws N
+		write /sys/module/wakeup/parameters/enable_si_wsk N
+		write /sys/module/wakeup/parameters/enable_smb135x_wake_ws N
+		write /sys/module/smb135x_charger/parameters/use_wlock N
+		write /sys/module/wakeup/parameters/enable_wlan_ctrl_wake_ws N
+		write /sys/module/wakeup/parameters/enable_wlan_ws N
+		write /sys/module/wakeup/parameters/enable_wlan_wow_wl_ws N
+		write /sys/module/wakeup/parameters/enable_wlan_wake_ws N
+		write /sys/module/wakeup/parameters/enable_wlan_rx_wake_ws N
+		write /sys/module/wakeup/parameters/enable_wlan_extscan_wl_ws N
+		write /sys/module/wakeup/parameters/enable_timerfd_ws N
+		write /sys/module/wakeup/parameters/enable_qcom_rx_wakelock_ws N
+		write /sys/module/wakeup/parameters/enable_netmgr_wl_ws N
+		write /sys/module/wakeup/parameters/enable_netlink_ws N
+		write /sys/module/wakeup/parameters/enable_ipa_ws N
+		write /sys/module/wakeup/parameters/enable_bluedroid_timer_ws N
+		write /sys/module/wakeup/parameters/enable_si_ws N
+		write /sys/module/wakeup/parameters/enable_si_ws N
+		write /sys/module/wakeup/parameters/enable_msm_hsic_ws N
+		write /sys/module/wakeup/parameters/wlan_rx_wake N
+		write /sys/module/wakeup/parameters/wlan_ctrl_wake N
+		write /sys/module/wakeup/parameters/wlan_wake N
+		write /sys/module/wakeup/parameters/enable_wcnss_filter_lock_ws N
+		write /sys/module/wakeup/parameters/enable_wlan_pno_wl_ws N
+		write /sys/module/wakeup/parameters/enable_wlan_ipa_ws N
+		write /sys/module/wakeup/parameters/enable_bluetooth_timer Y
+		write /sys/module/bcmdhd/parameters/wlctrl_divide 8
+		write /sys/module/bcmdhd/parameters/wlrx_divide 8
+	#Tweaks (test)
+		setprop dalvik.vm.dex2oat-threads 4
+		setprop dalvik.vm.image-dex2oat-threads 4
+		setprop debug.generate-debug-info false
+		setprop ro.data.large_tcp_window_size true
+		setprop ro.sys.fw.dex2oat_thread_count 4
+		setprop ro.sys.sdcardfs true
+		setprop sys.use_fifo_ui 1
+	# Selected Profile
+		PROFILE=$(cat /sdcard/Android/data/selected-profile);
+		if [ PROFILE == 1] then setprop persist.morpho.profile 1
+		if [ PROFILE == 2] then setprop persist.morpho.profile 2
+		if [ PROFILE == 3] then setprop persist.morpho.profile 3
+		if [ PROFILE == 4] then setprop persist.morpho.profile 4
+		if [ PROFILE == 5] then setprop persist.morpho.profile 5
+		
+		
+## Powered by spectrum
+##STARDUST
+
