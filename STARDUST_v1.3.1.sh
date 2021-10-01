@@ -309,11 +309,11 @@ if [ ! -n "$action" ]; then
 fi
 
 if [ "$action" = "debug" ]; then
-	echo "STARDUST "
-	echo "Author: STARDUST3574"
+	echo "STARDUST"
+	echo "Author: Radium-bit"
 	echo "Platform: msm8953"
 	echo "Generated at: 2019-6-29  01:48"
-	echo "Feedback mailbox:3574503872@qq.com"
+	echo "Feedback mailbox:leo-nod@qq.com"
 	echo ""
     # perform parameter verification
     cur_level=`cat ${CUR_LEVEL_FILE}`
