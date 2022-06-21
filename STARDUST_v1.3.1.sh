@@ -249,12 +249,12 @@ backup_default()
 restore_default()
 {
     if [ -f ${PARAM_BAK_FILE} ]; then
-        # read backup variables
+        # read backup data
         while read line
         do
             eval ${line}
         done < ${PARAM_BAK_FILE}
-        # set backup variables
+        # set backup data
         for n in `seq ${PARAM_NUM}`
         do
             eval obj="$"bak_obj${n}
